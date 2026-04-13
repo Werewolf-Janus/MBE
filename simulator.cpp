@@ -171,44 +171,61 @@ SceneObject* Simulator::buildScene()
     // Инициализация дна на сцене
     Point pointOnBottom(m_bottom.x0, m_bottom.y0, m_bottom.z0);
     Vector3d normal (m_bottom.nx, m_bottom.ny, m_bottom.nz);
-    Plain* plain = new Plain(pointOnBottom, normal, true);
+    Plain* plainBottom = new Plain(pointOnBottom, normal, true);
 
-
-    for (const QString& name : m_sumObjects) {
-        if(m_sphere.contains(name)){
-            const Sphere& s = m_sphere[name];
-            Point center(s.xc, s.yc, s.zc);
-            createSphere* obj = new createSphere(center, s.r);
-            plain->addObject(obj);
-        }
-        else if (m_plane.contains(name)){
-            const Plane& p = m_plane[name];
-            Point pos(p.x0, p.y0, p.z0);
-            Vector3d norm(p.nx, p.ny, p.nz);
-            norm.normalize();
-            Plain* obj = new Plain(pos, norm);
-            plain->addObject(obj);
-        }
+    // Создается QMap для хранения всех объектов
+    QMap<QString, SceneObject*> allObjects;
+    for (auto spheres = m_sphere.begin(); spheres != m_sphere.end(); ++spheres){
+        const Sphere& s = spheres.value(); // Храним в нем все сферы
+        allObjects[spheres.key()] = new createSphere(Point(s.xc, s.yc, s.zc), s.r); // Инициализируем сферу через словварь  создается в методе
+    }
+    for (auto planes = m_plane.begin(); planes != m_plane.end(); ++planes){
+        const Plane& p = planes.value(); // Храним в нем все плоскости
+        Vector3d norm (p.nx, p.ny, p.nz); // Нормализуем вектора, чтобы при трассировке луча по Закону снеллиуса не уходить в некорректные значения
+        allObjects[planes.key()] = new Plain(Point(p.x0, p.y0, p.z0), norm, false); // Инициализирукем плоскости по словарю
     }
 
-    for(const QString name: m_diffObjects){
-        if(m_sphere.contains(name)){
-            const Sphere& s = m_sphere[name];
-            Point center(s.xc, s.yc, s.zc);
-            createSphere* obj = new createSphere(center, s.r);
-            plain->subtractObject(obj);
+    // Добавляем объекты по списку Sum
+    for (const QString& name : m_sumObjects){
+        if (m_diffObjects.contains(name)){
+            // Производим инициализацию объекта-обертки для проведения вычитания
+            Plain* wrapper = new Plain(Point(0,0,0), Vector3d(0,0,1), false); // Используем нулевые параметры, кроме вектора нормали отвечающего за направление луча в сторону дна
+            wrapper->addObject(allObjects[name]);
+            const QStringList& subingObjs = m_diffObjects[name]; // Инициализируем вычитаемые объекты
+            for (const  QString subName : subingObjs){
+                if (allObjects.contains(subName)) wrapper->subtractObject(allObjects[subName]);
+            }
+            plainBottom->addObject(wrapper);
         }
-        else if (m_plane.contains(name)){
-            const Plane& p = m_plane[name];
-            Point pos(p.x0, p.y0, p.z0);
-            Vector3d norm(p.nx, p.ny, p.nz);
-            norm.normalize();
-            Plain* obj = new Plain(pos, norm);
-            plain->subtractObject(obj);
+        else plainBottom->addObject(allObjects[name]);
+
+
+        // Обработка объектов вне ключа sum
+        for (auto objs = m_diffObjects.begin(); objs != m_diffObjects.end(); ++objs){
+            const QString& target = objs.key();
+            const QStringList& subingObjs = objs.value();
+
+            if (target == "bottom"){
+                // Вычитание для дна
+                for (const QString& subingName : subingObjs)
+                    if (allObjects.contains(subingName)) {
+                        plainBottom->subtractObject(allObjects[subingName]);
+                    }
+            }
+            else if (!m_sumObjects.contains(target) && allObjects.contains(target)){ // Если вычитаемый объект не ссумммируемый и не дно
+                Plain* wrapper = new Plain(Point(0,0,0), Vector3d(0,0,1), false); // Аналогично для объектов суммирования создаем объект-обертку
+                wrapper -> addObject(allObjects[target]);
+                for (const QString& subingName :subingObjs){
+                    if (allObjects.contains(subingName)) wrapper-> subtractObject(allObjects[subingName]);
+                }
+                plainBottom->addObject(wrapper);
+            }
         }
+
+        return plainBottom;
     }
 
-    return plain;
+
 }
 
 QVector<double> Simulator::run(

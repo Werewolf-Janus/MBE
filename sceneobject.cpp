@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <QtMath>
 
-Plain::Plain(const Point& p, const Vector3d& normal, bool isBase) : p0(p), n(normal), m_isBase(false) {
+Plain::Plain(const Point& p, const Vector3d& normal, bool isBase) : p0(p), n(normal), m_isBase(isBase) {
     n.normalize();
 }
 

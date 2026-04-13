@@ -17,7 +17,8 @@ int main(int argc, char* argv[])
     QVector <double> beamAnglesDeg = {-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50};
     //
 //    QString filename = "/home/labirint/mleImit/MBE/input.json";
-    QString filename = "/home/oper/projectMBE/input.json";
+//    QString filename = "/home/oper/projectMBE/input.json";
+      QString filename = "/home/werewolf/MBE/input.json";
     if (argc > 1)
         filename = argv[1];
     Simulator sim;

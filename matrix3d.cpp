@@ -27,7 +27,7 @@ Matrix3d Matrix3d::operator*(const Matrix3d& other) const {
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
             for (int k = 0; k < 3; ++k) {
-                res[i][j] += m_data[i][k] * other.m_data[i][k];
+                res[i][j] += m_data[i][k] * other.m_data[k][j];
             }
         }
     }
