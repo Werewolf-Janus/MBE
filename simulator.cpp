@@ -187,18 +187,23 @@ SceneObject* Simulator::buildScene()
 
     // Добавляем объекты по списку Sum
     for (const QString& name : m_sumObjects){
+        if (!allObjects.contains(name)) continue ;
+
         if (m_diffObjects.contains(name)){
             // Производим инициализацию объекта-обертки для проведения вычитания
             Plain* wrapper = new Plain(Point(0,0,0), Vector3d(0,0,1), false); // Используем нулевые параметры, кроме вектора нормали отвечающего за направление луча в сторону дна
             wrapper->addObject(allObjects[name]);
             const QStringList& subingObjs = m_diffObjects[name]; // Инициализируем вычитаемые объекты
             for (const  QString subName : subingObjs){
-                if (allObjects.contains(subName)) wrapper->subtractObject(allObjects[subName]);
+                if (allObjects.contains(subName))
+                    wrapper->subtractObject(allObjects[subName]);
             }
             plainBottom->addObject(wrapper);
         }
-        else plainBottom->addObject(allObjects[name]);
-
+        else {
+                plainBottom->addObject(allObjects[name]);
+                    }
+    }
 
         // Обработка объектов вне ключа sum
         for (auto objs = m_diffObjects.begin(); objs != m_diffObjects.end(); ++objs){
@@ -221,12 +226,8 @@ SceneObject* Simulator::buildScene()
                 plainBottom->addObject(wrapper);
             }
         }
-
-        return plainBottom;
+    return plainBottom;
     }
-
-
-}
 
 QVector<double> Simulator::run(
                                double x, double y, double z,
